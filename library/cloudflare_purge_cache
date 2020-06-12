@@ -1,0 +1,64 @@
+#!/usr/bin/python
+
+# Maintainer: Dan Pilch 
+# Requires: 'pip install requests'
+
+try:
+    import requests
+    HAS_LIB = True
+except:
+    HAS_LIB = False
+
+DOCUMENTATION = '''
+module: cloudflare_purge_cache
+short_description: Performs a query against cloudflare api to invalidate cache
+description:
+  - Performs a query against cloudflare api to invalidate cache
+version_added: "2.0"
+options:
+
+
+
+'''
+
+class cloudflare_purge_cache(object):
+
+    """ initialise """
+    def __init__(self, module):
+        self.module = module
+        self.auth_key = module.params['auth_key']
+        self.email = module.params['email']
+        self.zone_id = module.params['zone_id']
+
+    """ POST to Cloudflare API """
+    def purge_cloudflare_api(self):
+        try:
+            url = "https://api.cloudflare.com/client/v4/zones/{0}/purge_cache".format(self.zone_id)
+            headers = { 'X-Auth-Email': self.email, 'X-Auth-Key': self.auth_key, 'Content-Type': 'application/json' } 
+            req = requests.post(url, headers=headers, json={"purge_everything": True})
+        except Exception as e:
+            self.module.fail_json(msg="Failed to POST to Cloudflare API: {0}".format(e))        
+    
+
+def main():
+
+    if not HAS_LIB:
+        module.fail_json(msg="Could not import requests package. Try: 'pip install requests'")
+
+    module = AnsibleModule(
+        argument_spec = dict(
+            auth_key = dict(required=True),
+            email = dict(required=True),
+            zone_id = dict(required=True),
+        ),
+    )
+
+    run = cloudflare_purge_cache(module)
+    run.purge_cloudflare_api()
+    module.exit_json(changed=True, meta="")
+
+
+
+from ansible.module_utils.basic import *
+
+main()
